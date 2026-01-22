@@ -9,7 +9,7 @@ import simulator
 # --- CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="NBA Analytics Dashboard")
 
-st.title("🏀 NBA Analytics Dashboard") 
+st.title("NBA Analytics Dashboard") 
 
 # --- 1. DATA LOADING ---
 @st.cache_data(ttl=3600)
@@ -120,7 +120,7 @@ if not comparison_mode:
     stats, pcts = get_player_data(p1_name)
     career = get_career_stats(stats['PLAYER_ID'])
     
-    st.header(f"{p1_name}")
+    st.header(f"🏀 {p1_name}")
     st.caption(f"{stats['TEAM_ABBREVIATION']} | {stats['GP']} GP | {stats['MIN']:.1f} MPG | Age: {int(stats['AGE'])}")
     
     tab_overview, tab_career, tab_sim = st.tabs(["Current Stats", "Career Trajectory", "Trade Simulator"])
@@ -135,14 +135,10 @@ if not comparison_mode:
                 fill='toself', name=p1_name, line_color='#1d428a'
             ))
             
-            # *** FIX: showticklabels=False hides the numbers inside the radar chart ***
+            # Hide radial numbers
             fig_radar.update_layout(
                 polar=dict(
-                    radialaxis=dict(
-                        visible=True, 
-                        range=[0, 100], 
-                        showticklabels=False  # This hides the 0, 20, 40...
-                    )
+                    radialaxis=dict(visible=True, range=[0, 100], showticklabels=False)
                 ), 
                 showlegend=False, 
                 height=400
@@ -161,7 +157,6 @@ if not comparison_mode:
                 text=display_text[::-1], textposition='inside', insidetextanchor='end'
             ))
             
-            # Keeping the bar chart clean as well
             fig_bar.update_layout(
                 xaxis=dict(range=[0, 100], showticklabels=False), 
                 height=400,
@@ -170,15 +165,58 @@ if not comparison_mode:
             st.plotly_chart(fig_bar, use_container_width=True)
 
     with tab_career:
-        st.subheader("Career Progression (PRA per game)")
+        st.subheader("📊 Career Progression")
         if not career.empty:
-            fig_traj = go.Figure()
-            fig_traj.add_trace(go.Scatter(x=career['SEASON_ID'], y=career['PPG'], mode='lines+markers', name='Points', line=dict(color='#1d428a', width=3)))
-            fig_traj.add_trace(go.Scatter(x=career['SEASON_ID'], y=career['APG'], mode='lines+markers', name='Assists', line=dict(color='#eab308', width=2)))
-            fig_traj.add_trace(go.Scatter(x=career['SEASON_ID'], y=career['RPG'], mode='lines+markers', name='Rebounds', line=dict(color='#ef4444', width=2)))
+            # Create 3 columns for side-by-side graphs
+            c1, c2, c3 = st.columns(3)
             
-            fig_traj.update_layout(hovermode="x unified", height=400, xaxis_title="Season", yaxis_title="Stats Per Game")
-            st.plotly_chart(fig_traj, use_container_width=True)
+            with c1:
+                st.markdown("**Points Per Game**")
+                fig_pts = go.Figure()
+                fig_pts.add_trace(go.Scatter(
+                    x=career['SEASON_ID'], y=career['PPG'], 
+                    mode='lines+markers', name='Points', 
+                    line=dict(color='#1d428a', width=3)
+                ))
+                fig_pts.update_layout(
+                    hovermode="x unified", height=300, 
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    yaxis_title="PPG",
+                    showlegend=False
+                )
+                st.plotly_chart(fig_pts, use_container_width=True)
+            
+            with c2:
+                st.markdown("**Assists Per Game**")
+                fig_ast = go.Figure()
+                fig_ast.add_trace(go.Scatter(
+                    x=career['SEASON_ID'], y=career['APG'], 
+                    mode='lines+markers', name='Assists', 
+                    line=dict(color='#eab308', width=3)
+                ))
+                fig_ast.update_layout(
+                    hovermode="x unified", height=300, 
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    yaxis_title="APG",
+                    showlegend=False
+                )
+                st.plotly_chart(fig_ast, use_container_width=True)
+
+            with c3:
+                st.markdown("**Rebounds Per Game**")
+                fig_reb = go.Figure()
+                fig_reb.add_trace(go.Scatter(
+                    x=career['SEASON_ID'], y=career['RPG'], 
+                    mode='lines+markers', name='Rebounds', 
+                    line=dict(color='#ef4444', width=3)
+                ))
+                fig_reb.update_layout(
+                    hovermode="x unified", height=300, 
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    yaxis_title="RPG",
+                    showlegend=False
+                )
+                st.plotly_chart(fig_reb, use_container_width=True)
             
             base_proj, age_factor = generate_projection(stats)
             st.info(f"Based on Age {int(stats['AGE'])}, we project a **{age_factor}x** multiplier for next season.")
@@ -203,14 +241,9 @@ else:
             fig.add_trace(go.Scatterpolar(r=p1[target_cols].values, theta=[metrics_map[c] for c in target_cols], fill='toself', name=p1_name, line_color='#1d428a', opacity=0.6))
             fig.add_trace(go.Scatterpolar(r=p2[target_cols].values, theta=[metrics_map[c] for c in target_cols], fill='toself', name=p2_name, line_color='#E03A3E', opacity=0.5))
             
-            # *** FIX: Also applied to Comparison Radar ***
             fig.update_layout(
                 polar=dict(
-                    radialaxis=dict(
-                        visible=True, 
-                        range=[0, 100], 
-                        showticklabels=False # Hiding numbers here too
-                    )
+                    radialaxis=dict(visible=True, range=[0, 100], showticklabels=False)
                 ), 
                 showlegend=True, 
                 legend=dict(orientation="h", y=1.1), 
